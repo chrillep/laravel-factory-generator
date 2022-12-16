@@ -230,7 +230,6 @@ class GenerateFactoryCommand extends Command
         }
 
         $database = null;
-
         if (Str::contains($table, '.')) {
             [$database, $table] = explode('.', $table);
         }
@@ -238,6 +237,16 @@ class GenerateFactoryCommand extends Command
         $this->registerCustomTypes($schema);
 
         $columns = $schema->listTableColumns($table, $database);
+
+        if (! $columns) {
+            $tenantModel = $this->laravel['config']->get('tenancy.tenant_model', null);
+            if ($tenantModel ) {
+                tenancy()->initialize($tenantModel::first());
+                $table = $model->getConnection()->getTablePrefix() . $model->getTable();
+                $schema = $model->getConnection()->getDoctrineSchemaManager();
+                $columns = $schema->listTableColumns($table, $database);
+            }
+        }
 
         if (! $columns) {
             return;
